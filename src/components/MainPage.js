@@ -1,7 +1,6 @@
-// src/components/MainPage.js
-import React from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect } from "react";
 import styled from "styled-components";
+import { useNavigate } from "react-router-dom";
 
 const MainContainer = styled.div`
   padding: 2rem;
@@ -22,11 +21,19 @@ const LogoutButton = styled.button`
   }
 `;
 
-function MainPage() {
+const MainPage = () => {
   const navigate = useNavigate();
 
+  useEffect(() => {
+    // 토큰이 없으면 로그인 페이지로 리다이렉트
+    const token = localStorage.getItem("accessToken");
+    if (!token) {
+      navigate("/");
+    }
+  }, [navigate]);
+
   const handleLogout = () => {
-    // 로그아웃 처리
+    localStorage.removeItem("accessToken");
     navigate("/");
   };
 
@@ -37,6 +44,6 @@ function MainPage() {
       <LogoutButton onClick={handleLogout}>로그아웃</LogoutButton>
     </MainContainer>
   );
-}
+};
 
 export default MainPage;

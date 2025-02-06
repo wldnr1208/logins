@@ -1,71 +1,95 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import styled from "styled-components";
+import { NAVER_CLIENT_ID, NAVER_CALLBACK_URL } from "../config/socialConfig";
 
-const LoginContainer = styled.div`
+const NaverButton = styled.div`
+  cursor: pointer;
+  background-color: #03c75a;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 4px;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  margin-top: 1rem;
 `;
 
-const LoginBox = styled.div`
-  background: white;
-  padding: 2rem;
-  border-radius: 10px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  width: 100%;
-  max-width: 400px;
-  text-align: center;
-`;
+const NaverLogin = () => {
+  const [naverLogin, setNaverLogin] = useState(null);
 
-const Title = styled.h1`
-  color: #333;
-  margin-bottom: 2rem;
-  font-size: 2rem;
-`;
-
-function NaverLogin() {
   useEffect(() => {
-    const naverLogin = () => {
-      window.location.href =
-        "http://15.164.91.27:8080/oauth2/authorization/naver";
+    const loadNaverScript = () => {
+      return new Promise((resolve, reject) => {
+        if (document.getElementById("naver-login-sdk")) {
+          resolve();
+          return;
+        }
+        const script = document.createElement("script");
+        script.id = "naver-login-sdk";
+        script.src =
+          "https://static.nid.naver.com/js/naveridlogin_js_sdk_2.0.2.js";
+        script.onload = () => resolve();
+        script.onerror = (error) => reject(error);
+        document.head.appendChild(script);
+      });
     };
 
-    const btnNaverLogin = document.getElementById("naverIdLogin");
-    if (btnNaverLogin) {
-      btnNaverLogin.addEventListener("click", naverLogin);
-    }
+    const initializeNaverLogin = () => {
+      try {
+        const loginInstance = new window.naver.LoginWithNaverId({
+          clientId: NAVER_CLIENT_ID,
+          callbackUrl: NAVER_CALLBACK_URL,
+          isPopup: false,
+          loginButton: { color: "green", type: 3, height: 60 },
+        });
+        loginInstance.init();
+        setNaverLogin(loginInstance);
+      } catch (err) {
+        console.error("네이버 로그인 초기화 실패:", err);
+      }
+    };
+
+    const initialize = async () => {
+      try {
+        await loadNaverScript();
+        initializeNaverLogin();
+      } catch (err) {
+        console.error("네이버 로그인 스크립트 로드 실패:", err);
+      }
+    };
+
+    initialize();
 
     return () => {
-      if (btnNaverLogin) {
-        btnNaverLogin.removeEventListener("click", naverLogin);
+      const script = document.getElementById("naver-login-sdk");
+      if (script) {
+        script.remove();
       }
     };
   }, []);
 
+  const handleNaverLogin = () => {
+    if (naverLogin) {
+      naverLogin.getLoginStatus((status) => {
+        if (status) {
+          // 이미 로그인된 상태
+          console.log("이미 로그인된 상태입니다.");
+        } else {
+          // 로그인 진행
+          document.getElementById("naverIdLogin_loginButton")?.click();
+        }
+      });
+    } else {
+      console.log("네이버 로그인이 아직 초기화되지 않았습니다.");
+    }
+  };
+
   return (
-    <LoginContainer>
-      <LoginBox>
-        <button
-          id="naverIdLogin"
-          style={{
-            backgroundColor: "#03C75A",
-            color: "white",
-            padding: "12px 20px",
-            border: "none",
-            borderRadius: "6px",
-            cursor: "pointer",
-            width: "100%",
-            fontSize: "16px",
-            fontWeight: "500",
-          }}
-        >
-          네이버 로그인
-        </button>
-      </LoginBox>
-    </LoginContainer>
+    <>
+      <div id="naverIdLogin" />
+      <NaverButton onClick={handleNaverLogin}>네이버 로그인</NaverButton>
+    </>
   );
-}
+};
 
 export default NaverLogin;
